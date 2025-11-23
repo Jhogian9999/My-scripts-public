@@ -1,0 +1,149 @@
+-- Services
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- GUI Creation
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.ResetOnSpawn = false
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 160, 0, 120)  -- Adjusted size to fit buttons perfectly
+MainFrame.Position = UDim2.new(0.5, -80, 0.5, -60)
+MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Black frame color
+MainFrame.BackgroundTransparency = 0.3
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.BorderSizePixel = 2
+MainFrame.BorderColor3 = Color3.fromRGB(255, 255, 255)  -- White border
+local MainCorner = Instance.new("UICorner", MainFrame)
+MainCorner.CornerRadius = UDim.new(0, 10)
+
+-- Toggle Button (top right)
+local ToggleBtn = Instance.new("TextButton", ScreenGui)
+ToggleBtn.Size = UDim2.new(0, 25, 0, 25)
+ToggleBtn.Position = UDim2.new(1, -35, 0, 10)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+ToggleBtn.BackgroundTransparency = 0.3
+ToggleBtn.Text = "+"
+ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
+ToggleBtn.TextScaled = true
+ToggleBtn.BorderSizePixel = 0
+local ToggleCorner = Instance.new("UICorner", ToggleBtn)
+ToggleCorner.CornerRadius = UDim.new(0, 6)
+
+-- Size TextBox
+local SizeBox = Instance.new("TextBox", MainFrame)
+SizeBox.Size = UDim2.new(1, -20, 0, 25)
+SizeBox.Position = UDim2.new(0, 10, 0, 10)
+SizeBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+SizeBox.PlaceholderText = "Size (default 60)"
+SizeBox.Text = ""
+SizeBox.TextColor3 = Color3.new(1, 1, 1)
+SizeBox.TextScaled = true
+SizeBox.BorderSizePixel = 0
+Instance.new("UICorner", SizeBox).CornerRadius = UDim.new(0, 8)
+
+-- Expand Button
+local ExpandBtn = Instance.new("TextButton", MainFrame)
+ExpandBtn.Size = UDim2.new(1, -20, 0, 25)
+ExpandBtn.Position = UDim2.new(0, 10, 0, 40)
+ExpandBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ExpandBtn.Text = "Expand Hitbox"
+ExpandBtn.TextColor3 = Color3.new(1, 1, 1)
+ExpandBtn.TextScaled = true
+ExpandBtn.BorderSizePixel = 0
+Instance.new("UICorner", ExpandBtn).CornerRadius = UDim.new(0, 8)
+
+-- Shrink Button
+local ShrinkBtn = Instance.new("TextButton", MainFrame)
+ShrinkBtn.Size = UDim2.new(1, -20, 0, 25)
+ShrinkBtn.Position = UDim2.new(0, 10, 0, 70)
+ShrinkBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ShrinkBtn.Text = "Shrink Hitbox"
+ShrinkBtn.TextColor3 = Color3.new(1, 1, 1)
+ShrinkBtn.TextScaled = true
+ShrinkBtn.BorderSizePixel = 0
+Instance.new("UICorner", ShrinkBtn).CornerRadius = UDim.new(0, 8)
+
+-- Expand Logic
+ExpandBtn.MouseButton1Click:Connect(function()
+    local char = player.Character or player.CharacterAdded:Wait()
+    local tool = char:FindFirstChildOfClass("Tool")
+
+    if tool and tool:FindFirstChild("Handle") then
+        local handle = tool.Handle
+
+        -- Remove old selection box if any
+        if handle:FindFirstChild("SelectionBoxCreated") then
+            handle.SelectionBoxCreated:Destroy()
+        end
+
+        -- Create SelectionBox with blue outline
+        local selection = Instance.new("SelectionBox")
+        selection.Name = "SelectionBoxCreated"
+        selection.Parent = handle
+        selection.Adornee = handle
+        selection.LineThickness = 0.05
+        selection.Color3 = Color3.fromRGB(0, 0, 255)  -- Blue color for the selection box
+
+        handle.Massless = true
+
+        -- Expand size
+        local size = tonumber(SizeBox.Text) or 60
+        handle.Size = Vector3.new(size, size, size)
+        handle.Transparency = 1
+        handle.CanCollide = false
+
+        tool.GripPos = Vector3.new(0, 0, 0)
+        char:FindFirstChildOfClass("Humanoid"):UnequipTools()
+
+        ExpandBtn.Text = "Expanded!"
+    else
+        ExpandBtn.Text = "No Tool"
+    end
+end)
+
+-- Shrink Logic
+ShrinkBtn.MouseButton1Click:Connect(function()
+    local char = player.Character or player.CharacterAdded:Wait()
+    local tool = char:FindFirstChildOfClass("Tool")
+
+    if tool and tool:FindFirstChild("Handle") then
+        local handle = tool.Handle
+
+        if handle:FindFirstChild("SelectionBoxCreated") then
+            handle.SelectionBoxCreated:Destroy()
+        end
+
+        -- Reset size and properties
+        local originalSize = handle.Size
+        handle.Size = originalSize
+        handle.Transparency = 0
+        handle.CanCollide = true
+        tool.GripPos = Vector3.new(0, 0, 0)
+
+        ExpandBtn.Text = "Expand Hitbox"
+    else
+        ExpandBtn.Text = "No Tool"
+    end
+end)
+
+-- Smooth Open/Close with EaseIn and EaseOut (Slower Transition)
+local guiVisible = true
+local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)  -- Transition time set to 1 second
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    guiVisible = not guiVisible
+
+    local goal = {}
+    if guiVisible then
+        goal.Position = UDim2.new(0.5, -80, 0.5, -60)  -- Smaller frame size and position
+        ToggleBtn.Text = "-"
+    else
+        goal.Position = UDim2.new(0.5, -80, -1, -120)
+        ToggleBtn.Text = "+"
+    end
+
+    TweenService:Create(MainFrame, tweenInfo, goal):Play()
+end)

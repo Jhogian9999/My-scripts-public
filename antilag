@@ -1,0 +1,85 @@
+-- 🌟 FPS Booster: Remove Grass from Terrain, Plastic Parts, Particle Rate Reduction (80%), Remove Decals, Delete Folder
+
+local Workspace = game:GetService("Workspace")
+local Terrain = game:GetService("Terrain")
+local Lighting = game:GetService("Lighting")
+
+-- Function to reduce particle rate
+local function reduceParticle(obj)
+	if obj:IsA("ParticleEmitter") then
+		obj.Rate = math.max(1, obj.Rate * 0.2) -- 80% reduction
+	end
+end
+
+-- Function to make all parts Plastic
+local function makePlasticParts(obj)
+	if obj:IsA("BasePart") or obj:IsA("MeshPart") then
+		obj.Material = Enum.Material.Plastic
+		obj.Reflectance = 0
+	end
+end
+
+-- Function to remove all decals
+local function removeDecals(obj)
+	if obj:IsA("Decal") then
+		obj:Destroy()
+	end
+end
+
+-- Function to remove grass from terrain
+local function removeGrassFromTerrain()
+	for x = -250, 250, 4 do
+		for y = 1, 40, 4 do
+			for z = -250, 250, 4 do
+				local cell = Terrain:ReadVoxels(Region3.new(Vector3.new(x, y, z), Vector3.new(x+4, y+4, z+4)), 4)
+				for _, voxel in ipairs(cell) do
+					if voxel.Material == Enum.Material.Grass then
+						-- Replace grass with another material, such as plastic or air
+						Terrain:WriteVoxels(Region3.new(Vector3.new(x, y, z), Vector3.new(x+4, y+4, z+4)), Enum.Material.Plastic)
+					end
+				end
+			end
+		end
+	end
+end
+
+-- Function to delete the "No Build Barriers" folder
+local function deleteNoBuildBarriers()
+	local noBuildBarriers = workspace.ActiveLevel:FindFirstChild("No Build Barriers")
+	if noBuildBarriers then
+		noBuildBarriers:Destroy()
+		print("✅ 'No Build Barriers' folder deleted.")
+	else
+		print("⚠️ 'No Build Barriers' folder not found.")
+	end
+end
+
+-- Apply to all current objects in the workspace
+for _, obj in ipairs(Workspace:GetDescendants()) do
+	reduceParticle(obj)
+	makePlasticParts(obj)
+	removeDecals(obj)
+end
+
+-- Apply changes to future objects
+Workspace.DescendantAdded:Connect(function(obj)
+	reduceParticle(obj)
+	makePlasticParts(obj)
+	removeDecals(obj)
+end)
+
+-- Remove grass from terrain
+removeGrassFromTerrain()
+
+-- Delete the "No Build Barriers" folder
+deleteNoBuildBarriers()
+
+-- Dim the lighting for better performance
+Lighting.Brightness = 1  -- default is usually 2, lower for dimmer
+Lighting.GlobalShadows = false
+Lighting.EnvironmentDiffuseScale = 0
+Lighting.EnvironmentSpecularScale = 0
+Lighting.OutdoorAmbient = Color3.fromRGB(80, 80, 80)
+Lighting.Ambient = Color3.fromRGB(100, 100, 100)
+
+print("✅ All parts set to Plastic, particle rate reduced by 80%, decals removed, grass removed from terrain, 'No Build Barriers' folder deleted, and lighting dimmed.")
